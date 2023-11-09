@@ -1,102 +1,108 @@
 import math
 from random import random
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plot
 import networkx as nx
 
 
-def f_a(d, k):
+def attractive_force(d, k):
     return d * d / k
 
 
-def f_r(d, k):
+def repulsive_force(d, k):
     return k * k / d
 
 
-def fruchterman_reingold(G, iteration=50, cnt=0):
-    W = 1
-    L = 1
-    area = W * L
-    k = math.sqrt(area / nx.number_of_nodes(G))
+def draw_fig(graph, positions):
+    plot.ylim([-0.1, 1.1])
+    plot.xlim([-0.1, 1.1])
+    plot.axis('off')
+    nx.draw_networkx(graph, pos=positions, node_size=10, width=0.1, with_labels=False)
 
-    for v in nx.nodes(G):
-        G.nodes[v]['x'] = W * random()
-        G.nodes[v]['y'] = L * random()
 
-    t = W / 10
-    dt = t / (iteration + 1)
-    # dt = 0.002
+def fruchterman_reingold(graph):
+    width = 1  # Width of the frame
+    length = 1  # Length of the frame
+    area = width * length
+    k = math.sqrt(area / nx.number_of_nodes(graph))  # constant_k
+
+    # Place nodes randomly in the layout
+    for v in nx.nodes(graph):
+        graph.nodes[v]['x'] = width * random()
+        graph.nodes[v]['y'] = length * random()
+
+    temperature = width / 10
+    dt = temperature / 51
 
     print("area:{0}".format(area))
     print("k:{0}".format(k))
-    print("t:{0}, dt:{1}".format(t, dt))
+    print("t:{0}, dt:{1}".format(temperature, dt))
 
-    for i in range(iteration):
+    for i in range(50):
         print("iter {0}".format(i))
 
-        pos = {}
-        for v in G.nodes():
-            pos[v] = [G.nodes[v]['x'], G.nodes[v]['y']]
-        plt.close()
-        plt.ylim([-0.1, 1.1])
-        plt.xlim([-0.1, 1.1])
-        plt.axis('off')
-        nx.draw_networkx(G, pos=pos, node_size=10, width=0.1, with_labels=False)
-        plt.savefig("{0}.png".format(i))
+        # Draw initial layout
+        positions = {}
+        for v in graph.nodes():
+            positions[v] = [graph.nodes[v]['x'], graph.nodes[v]['y']]
+        if i == 0:
+            plot.close()
+            draw_fig(graph, positions)
+            plot.savefig("{0}.png".format(i))
 
-        for v in G.nodes():
-            G.nodes[v]['dx'] = 0
-            G.nodes[v]['dy'] = 0
-            for u in G.nodes():
+        # Calculating repulsive forces
+        for v in graph.nodes():
+            # displacement of the vector
+            graph.nodes[v]['dx'] = 0
+            graph.nodes[v]['dy'] = 0
+            for u in graph.nodes():
                 if v != u:
-                    dx = G.nodes[v]['x'] - G.nodes[u]['x']
-                    dy = G.nodes[v]['y'] - G.nodes[u]['y']
+                    # Calculating difference between the position of two vertices (ie) v.pos - u.pos
+                    dx = graph.nodes[v]['x'] - graph.nodes[u]['x']
+                    dy = graph.nodes[v]['y'] - graph.nodes[u]['y']
+                    # Delta is the difference vector between the position of two vertices
                     delta = math.sqrt(dx * dx + dy * dy)
                     if delta != 0:
-                        d = f_r(delta, k) / delta
-                        G.nodes[v]['dx'] += dx * d  # check
-                        G.nodes[v]['dy'] += dy * d
+                        d = repulsive_force(delta, k) / delta
+                        graph.nodes[v]['dx'] += dx * d  # not clear
+                        graph.nodes[v]['dy'] += dy * d
 
-        for v, u in G.edges():
-            dx = G.nodes[v]['x'] - G.nodes[u]['x']
-            dy = G.nodes[v]['y'] - G.nodes[u]['y']
+        # Calculating attractive forces
+        for v, u in graph.edges():
+            dx = graph.nodes[v]['x'] - graph.nodes[u]['x']
+            dy = graph.nodes[v]['y'] - graph.nodes[u]['y']
             delta = math.sqrt(dx * dx + dy * dy)
             if delta != 0:
-                d = f_a(delta, k) / delta
-                ddx = dx * d
-                ddy = dy * d
-                G.nodes[v]['dx'] += -ddx
-                G.nodes[u]['dx'] += +ddx
-                G.nodes[v]['dy'] += -ddy
-                G.nodes[u]['dy'] += +ddy
+                d = attractive_force(delta, k) / delta
+                graph.nodes[v]['dx'] = graph.nodes[v]['dx'] - dx * d
+                graph.nodes[u]['dx'] = graph.nodes[u]['dx'] + dx * d
+                graph.nodes[v]['dy'] = graph.nodes[v]['dy'] - dy * d
+                graph.nodes[u]['dy'] = graph.nodes[u]['dy'] + dy * d
 
-        for v in G.nodes():
-            dx = G.nodes[v]['dx']
-            dy = G.nodes[v]['dy']
+        # Limit max displacement to temperature and prevent from displacement outside frame
+        for v in graph.nodes():
+            dx = graph.nodes[v]['dx']
+            dy = graph.nodes[v]['dy']
             disp = math.sqrt(dx * dx + dy * dy)
             if disp != 0:
-                cnt += 1
-                d = min(disp, t) / disp
-                x = G.nodes[v]['x'] + dx * d
-                y = G.nodes[v]['y'] + dy * d
-                x = min(W, max(0, x)) - W / 2
-                y = min(L, max(0, y)) - L / 2
-                G.nodes[v]['x'] = min(math.sqrt(W * W / 4 - y * y), max(-math.sqrt(W * W / 4 - y * y), x)) + W / 2
-                G.nodes[v]['y'] = min(math.sqrt(L * L / 4 - x * x), max(-math.sqrt(L * L / 4 - x * x), y)) + L / 2
+                d = min(disp, temperature) / disp
+                x = graph.nodes[v]['x'] + dx * d
+                y = graph.nodes[v]['y'] + dy * d
+                x = min(width, max(0, x)) - width / 2
+                y = min(length, max(0, y)) - length / 2
+                graph.nodes[v]['x'] = min(math.sqrt(width * width / 4 - y * y),
+                                          max(-math.sqrt(width * width / 4 - y * y), x)) + width / 2
+                graph.nodes[v]['y'] = min(math.sqrt(length * length / 4 - x * x),
+                                          max(-math.sqrt(length * length / 4 - x * x), y)) + length / 2
 
         # cooling
-        t -= dt
+        temperature -= dt
 
-    pos = {}
-    for v in G.nodes():
-        pos[v] = [G.nodes[v]['x'], G.nodes[v]['y']]
-    plt.close()
-    plt.ylim([-0.1, 1.1])
-    plt.xlim([-0.1, 1.1])
-    plt.axis('off')
-    nx.draw_networkx(G, pos=pos, node_size=10, width=0.1, with_labels=False)
-    # plt.show()
-    plt.savefig("{0}".format(iteration + 1))
+    positions = {}
+    for v in graph.nodes():
+        positions[v] = [graph.nodes[v]['x'], graph.nodes[v]['y']]
+    plot.close()
+    draw_fig(graph, positions)
+    plot.savefig("Final_FR")
 
-    return pos
-
+    return positions
