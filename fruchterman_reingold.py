@@ -14,31 +14,32 @@ def repulsive_force(d, k):
 
 
 def draw_fig(graph, positions):
-    plot.ylim([-0.1, 1.1])
-    plot.xlim([-0.1, 1.1])
-    plot.axis('off')
+    plot.figure(figsize=(8, 6))
     nx.draw_networkx(graph, pos=positions, node_size=10, width=0.1, with_labels=False)
+    plot.title('Fruchterman-Reingold Layout')
+    plot.axis('off')
 
 
-def fruchterman_reingold(graph):
+def fruchterman_reingold(graph, iterations, flag):
     width = 1  # Width of the frame
     length = 1  # Length of the frame
     area = width * length
-    k = math.sqrt(area / nx.number_of_nodes(graph))  # constant_k
+    k = math.sqrt(area / nx.number_of_nodes(graph))  # optimal distance between vertices
+    iterations = iterations
 
     # Place nodes randomly in the layout
     for v in nx.nodes(graph):
         graph.nodes[v]['x'] = width * random()
         graph.nodes[v]['y'] = length * random()
 
-    temperature = width / 10
-    dt = temperature / 51
+    temperature = width / 10  # one tenth the width of the frame
+    dt = temperature / iterations
 
     print("area:{0}".format(area))
     print("k:{0}".format(k))
     print("t:{0}, dt:{1}".format(temperature, dt))
 
-    for i in range(50):
+    for i in range(iterations):
         print("iter {0}".format(i))
 
         # Draw initial layout
@@ -48,7 +49,7 @@ def fruchterman_reingold(graph):
         if i == 0:
             plot.close()
             draw_fig(graph, positions)
-            plot.savefig("{0}.png".format(i))
+            plot.savefig("fr_images/{0}.png".format(i))
 
         # Calculating repulsive forces
         for v in graph.nodes():
@@ -63,9 +64,9 @@ def fruchterman_reingold(graph):
                     # Delta is the difference vector between the position of two vertices
                     delta = math.sqrt(dx * dx + dy * dy)
                     if delta != 0:
-                        d = repulsive_force(delta, k) / delta
-                        graph.nodes[v]['dx'] += dx * d  # not clear
-                        graph.nodes[v]['dy'] += dy * d
+                        rep_force = repulsive_force(delta, k) / delta
+                        graph.nodes[v]['dx'] += dx * rep_force
+                        graph.nodes[v]['dy'] += dy * rep_force
 
         # Calculating attractive forces
         for v, u in graph.edges():
@@ -97,12 +98,16 @@ def fruchterman_reingold(graph):
 
         # cooling
         temperature -= dt
+        if flag:
+            plot.close()
+            draw_fig(graph, positions)
+            plot.savefig("fr_images/{0}.png".format(i))
 
     positions = {}
     for v in graph.nodes():
         positions[v] = [graph.nodes[v]['x'], graph.nodes[v]['y']]
     plot.close()
     draw_fig(graph, positions)
-    plot.savefig("Final_FR")
+    plot.savefig("fr_images/Final_FR")
 
     return positions

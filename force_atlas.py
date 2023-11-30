@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 
 
-def force_atlas_layout(G, iterations=100, gravity=1.0):
+def force_atlas_layout(G, iterations=200, gravity=1.0, flag=False):
     # initial positions of points
     # mass of nodes = degree of the nodes
     for v in nx.nodes(G):
@@ -20,6 +20,7 @@ def force_atlas_layout(G, iterations=100, gravity=1.0):
     speed = 1
     speed_efficiency = 1
     jitter_tolerance = 1.0
+    pos = {}
 
     for i in range(0, iterations):
         # Reset iteration data
@@ -113,15 +114,21 @@ def force_atlas_layout(G, iterations=100, gravity=1.0):
             G.nodes[v]['x'] += (dx * factor)
             G.nodes[v]['y'] += (dy * factor)
 
-    pos = {}
-    for v in G.nodes():
-        pos[v] = [G.nodes[v]['x'], G.nodes[v]['y']]
+
+        for v in G.nodes():
+            pos[v] = [G.nodes[v]['x'], G.nodes[v]['y']]
+
+        if flag:
+            plt.figure(figsize=(8, 6))
+            nx.draw_networkx(G, pos, node_size=10, width=0.1, with_labels=False)
+            plt.title('Force-Atlas Layout')
+            plt.axis('off')
+            plt.savefig("fa_images/{0}.png".format(i))
+            plt.close()
 
     plt.figure(figsize=(8, 6))
     nx.draw_networkx(G, pos, node_size=10, width=0.1, with_labels=False)
     plt.title('Force-Atlas Layout')
     plt.axis('off')
-    plt.savefig("force_atlas.png")
+    plt.savefig("fa_images/{0}.png".format(i))
     plt.close()
-
-    return pos
