@@ -1,4 +1,4 @@
-# Graph Drawing Algorithms Implementation Project
+# Graph Drawing Algorithms Implementation
 
 ## Overview
 
