@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 
+from force_atlas import force_atlas_layout
 from fruchterman_reingold import fruchterman_reingold
 from kamada_kawai import kk_layout
-from force_atlas import force_atlas_layout
 
 
 def main():
